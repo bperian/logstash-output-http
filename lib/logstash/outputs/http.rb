@@ -79,7 +79,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
   # If message, then the body will be the result of formatting the event according to message
   #
   # Otherwise, the event is sent as json.
-  config :format, :validate => ["json", "form", "message"], :default => "json"
+  config :format, :validate => ["json", "form", "message","hec_json"], :default => "json"
 
   # Set this to true if you want to enable gzip compression for your http requests
   config :http_compression, :validate => :boolean, :default => false
@@ -102,6 +102,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
       case @format
         when "form" ; @content_type = "application/x-www-form-urlencoded"
         when "json" ; @content_type = "application/json"
+		when "hec_json" ; @content_type = "application/json" 
         when "message" ; @content_type = "text/plain"
       end
     end
@@ -303,6 +304,8 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     # TODO: Create an HTTP post data codec, use that here
     if @format == "json"
       LogStash::Json.dump(map_event(event))
+	elsif @format == "hec_json"
+	  LogStash::Json.dump(map_hec_event(event))
     elsif @format == "message"
       event.sprintf(@message)
     else
@@ -340,6 +343,14 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     else
       event.to_hash
     end
+  end
+  
+  def map_hec_event(event)
+	if @mapping
+		event.set("event",convert_mapping(@mapping, event))
+	else	
+		event.set("event",event)   
+	event.to_hash
   end
 
   def event_headers(event)
