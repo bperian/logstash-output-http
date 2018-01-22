@@ -305,7 +305,12 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     if @format == "json"
       LogStash::Json.dump(map_event(event))
 	elsif @format == "hec_json"
-	  LogStash::Json.dump(map_hec_event(event))
+	  dd_event = Hash.new
+        dd_event['event'] = Hash.new
+        event.to_hash.each { |k, v|
+                dd_event['event'][k] = v
+        }
+      LogStash::Json.dump(dd_event)
     elsif @format == "message"
       event.sprintf(@message)
     else
@@ -343,14 +348,6 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     else
       event.to_hash
     end
-  end
-  
-  def map_hec_event(event)
-	if @mapping
-		event.set("event",convert_mapping(@mapping, event))
-	else	
-		event.set("event",event)   
-	event.to_hash
   end
 
   def event_headers(event)
